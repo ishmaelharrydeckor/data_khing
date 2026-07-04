@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       return new Response("Missing signature", { status: 401 });
     }
 
-    const secret = process.env.PAYSTACK_WEBHOOK_SECRET || "mock_paystack_secret";
+    const secret = process.env.PAYSTACK_SECRET_KEY || "mock_paystack_secret";
     const expected = crypto
       .createHmac("sha512", secret)
       .update(rawBody)
