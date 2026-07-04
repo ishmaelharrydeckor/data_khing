@@ -115,6 +115,12 @@ export default async function StorefrontPage({ params }: { params: Promise<{ sto
               <Link href={`/shop/${store.slug}/become-a-reseller`} className="hover:text-white transition-colors">
                 Become a Reseller
               </Link>
+              <Link href={`/shop/${store.slug}/track-order`} className="hover:text-white transition-colors">
+                Track Order
+              </Link>
+              <Link href={`/shop/${store.slug}/about`} className="hover:text-white transition-colors">
+                About Us
+              </Link>
               <Link href="/login" className="hover:text-white transition-colors">
                 Reseller Login
               </Link>

@@ -86,3 +86,76 @@ export async function createOrderAction(formData: {
     return { success: false, error: err.message || "An error occurred." };
   }
 }
+
+export async function trackOrderAction(
+  storeId: string,
+  searchType: "phone" | "reference" | "txid",
+  query: string
+) {
+  try {
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return { success: false, error: "Query cannot be empty." };
+
+    let orders: any[] = [];
+
+    if (searchType === "phone") {
+      if (!/^\+?[0-9]{9,15}$/.test(cleanQuery)) {
+        return { success: false, error: "Invalid phone number format." };
+      }
+      orders = await prisma.order.findMany({
+        where: { storeId, recipientPhone: cleanQuery },
+        include: { bundle: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      });
+    } else if (searchType === "reference") {
+      if (cleanQuery.length < 8) {
+        return { success: false, error: "Invalid reference key length." };
+      }
+      orders = await prisma.order.findMany({
+        where: {
+          storeId,
+          OR: [
+            { id: cleanQuery },
+            { id: { startsWith: cleanQuery } }
+          ]
+        },
+        include: { bundle: true },
+        orderBy: { createdAt: "desc" },
+      });
+    } else if (searchType === "txid") {
+      if (cleanQuery.length < 5) {
+        return { success: false, error: "Invalid Transaction ID length." };
+      }
+      orders = await prisma.order.findMany({
+        where: {
+          storeId,
+          OR: [
+            { paystackRef: cleanQuery },
+            { supplierOrderRef: cleanQuery }
+          ]
+        },
+        include: { bundle: true },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
+    return {
+      success: true,
+      orders: orders.map(o => ({
+        id: o.id,
+        phone: o.recipientPhone,
+        bundleName: o.bundle.label,
+        network: o.bundle.network,
+        amount: o.amountPaid,
+        status: o.status,
+        createdAt: o.createdAt.toISOString(),
+        paystackRef: o.paystackRef || "N/A",
+      }))
+    };
+  } catch (err: any) {
+    console.error("Order tracking failure:", err);
+    return { success: false, error: "Failed to query orders." };
+  }
+}
+
