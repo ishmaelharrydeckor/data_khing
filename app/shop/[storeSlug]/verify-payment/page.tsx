@@ -10,16 +10,17 @@ export default async function VerifyPaymentPage({
   params,
   searchParams,
 }: {
-  params: { storeSlug: string };
-  searchParams: { reference?: string };
+  params: Promise<{ storeSlug: string }>;
+  searchParams: Promise<{ reference?: string }>;
 }) {
+  const { storeSlug } = await params;
+  const { reference } = await searchParams;
+
   const store = await prisma.store.findUnique({
-    where: { slug: params.storeSlug },
+    where: { slug: storeSlug },
   });
 
   if (!store) return <div>Store not found.</div>;
-
-  const reference = searchParams.reference;
 
   if (!reference) {
     return (

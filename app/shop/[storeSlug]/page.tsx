@@ -4,9 +4,10 @@ import { StorefrontForm } from "@/components/storefront-form";
 import Link from "next/link";
 import Image from "next/image";
 
-export async function generateMetadata({ params }: { params: { storeSlug: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ storeSlug: string }> }) {
+  const { storeSlug } = await params;
   const store = await prisma.store.findUnique({
-    where: { slug: params.storeSlug },
+    where: { slug: storeSlug },
   });
   if (!store) return { title: "Store Not Found" };
   return {
@@ -15,9 +16,10 @@ export async function generateMetadata({ params }: { params: { storeSlug: string
   };
 }
 
-export default async function StorefrontPage({ params }: { params: { storeSlug: string } }) {
+export default async function StorefrontPage({ params }: { params: Promise<{ storeSlug: string }> }) {
+  const { storeSlug } = await params;
   const store = await prisma.store.findUnique({
-    where: { slug: params.storeSlug },
+    where: { slug: storeSlug },
   });
 
   if (!store || store.status !== "ACTIVE") {
