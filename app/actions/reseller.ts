@@ -40,7 +40,11 @@ export async function submitResellerApplicationAction(formData: {
 
     // Generate Paystack checkout reference
     const paymentRef = "app_pay_" + crypto.randomBytes(8).toString("hex");
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const { headers } = await import("next/headers");
+    const headerList = await headers();
+    const host = headerList.get("host") || "localhost:3000";
+    const protocol = headerList.get("x-forwarded-proto") || "http";
+    const baseUrl = `${protocol}://${host}`;
     const callbackUrl = `${baseUrl}/shop/${parentStore.slug}/become-a-reseller/verify-payment`;
 
     const paystackRes = await paymentClient.initializePayment(

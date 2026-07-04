@@ -49,7 +49,11 @@ export async function createOrderAction(formData: {
 
     // 3. Initialize Paystack payment
     // We pass a callback URL which will redirect back to store page
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const { headers } = await import("next/headers");
+    const headerList = await headers();
+    const host = headerList.get("host") || "localhost:3000";
+    const protocol = headerList.get("x-forwarded-proto") || "http";
+    const baseUrl = `${protocol}://${host}`;
     const callbackUrl = `${baseUrl}/shop/${store.slug}/verify-payment`;
 
     const paystackRes = await paymentClient.initializePayment(
