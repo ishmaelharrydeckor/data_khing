@@ -5,6 +5,7 @@ import { getActiveStore } from "@/lib/store-context";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { StoreSwitcher } from "@/components/store-switcher";
+import { MobileMenu } from "@/components/mobile-menu";
 import {
   LayoutDashboard,
   Layers,
@@ -170,8 +171,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <h2 className="text-lg font-bold text-slate-100 hidden md:block">
             {activeStore ? activeStore.name : "Dashboard"}
           </h2>
-          <div className="flex items-center gap-4 md:hidden w-full justify-between">
-            <span className="text-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+          <div className="flex items-center gap-2 md:hidden w-full justify-between">
+            <MobileMenu isPlatformAdmin={isPlatformAdmin} />
+            <span className="text-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent truncate max-w-[100px]">
               DataKhing
             </span>
             {activeStore && <StoreSwitcher currentStore={activeStore} stores={myStores} />}
