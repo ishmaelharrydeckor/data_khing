@@ -1,0 +1,236 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  AGENT
+  ADMIN
+}
+
+enum StoreStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum StoreType {
+  ROOT
+  AGENT
+  INDEPENDENT
+}
+
+enum ApplicationStatus {
+  PENDING_PAYMENT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum LedgerStatus {
+  AVAILABLE
+  WITHDRAWN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  FAILED
+  REFUNDED
+}
+
+enum NetworkType {
+  YELLO
+  TELECEL
+  AT_PREMIUM
+}
+
+enum WithdrawalStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum PayoutMethod {
+  MANUAL_MOMO
+  MANUAL_BANK
+  PAYSTACK_TRANSFER
+}
+
+enum WalletTransactionType {
+  TOPUP
+  PURCHASE
+  REFERRAL_CREDIT
+  PAYOUT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String?
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  stores             Store[]
+  agentApplications  AgentApplication[] @relation("Applicant")
+  reviewedApps       AgentApplication[] @relation("Reviewer")
+  orders             Order[]
+  walletTransactions WalletTransaction[]
+}
+
+model Store {
+  id             String      @id @default(uuid())
+  ownerUserId    String
+  parentStoreId  String?
+  slug           String      @unique
+  name           String
+  status         StoreStatus @default(PENDING)
+  storeType      StoreType   @default(INDEPENDENT)
+  displayName    String?
+  logoUrl        String?
+  primaryColor   String      @default("#4F46E5") // default indigo
+  supportEmail   String?
+  contactPhone   String?
+  footerText     String?
+  ancestorPath   String      @default("root")
+  createdAt      DateTime    @default(now())
+
+  // Relations
+  owner             User               @relation(fields: [ownerUserId], references: [id])
+  parent            Store?             @relation("StoreHierarchy", fields: [parentStoreId], references: [id])
+  childStores       Store[]            @relation("StoreHierarchy")
+  pricings          StorePricing[]
+  applications      AgentApplication[] @relation("StoreApplications")
+  ledgers           Ledger[]
+  withdrawals       Withdrawal[]
+  orders            Order[]
+}
+
+model StorePricing {
+  id                        String   @id @default(uuid())
+  storeId                   String
+  bundleId                  String
+  priceForCustomersPesewas  Int
+  priceForSubAgentsPesewas  Int
+  updatedAt                 DateTime @updatedAt
+
+  // Relations
+  store  Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, bundleId])
+}
+
+model AgentApplication {
+  id                     String            @id @default(uuid())
+  applicantUserId        String
+  parentStoreId          String?
+  storeName              String
+  applicationFeePesewas  Int
+  paymentRef             String?           @unique
+  status                 ApplicationStatus @default(PENDING_PAYMENT)
+  reviewedByUserId       String?
+  reviewedAt             DateTime?
+  createdAt              DateTime          @default(now())
+
+  // Relations
+  applicant   User    @relation("Applicant", fields: [applicantUserId], references: [id])
+  parentStore Store?  @relation("StoreApplications", fields: [parentStoreId], references: [id])
+  reviewer    User?   @relation("Reviewer", fields: [reviewedByUserId], references: [id])
+  ledgers     Ledger[]
+}
+
+model Ledger {
+  id               String       @id @default(uuid())
+  storeId          String
+  orderId          String?
+  applicationId    String?
+  tierDepth        Int          @default(0) // 0 = the selling store, 1 = parent, etc.
+  buyPricePesewas  Int
+  sellPricePesewas Int
+  amountPesewas    Int          // Profit: sellPrice - buyPrice
+  status           LedgerStatus @default(AVAILABLE)
+  createdAt        DateTime     @default(now())
+
+  // Relations
+  store       Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  application AgentApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+}
+
+model Withdrawal {
+  id                 String           @id @default(uuid())
+  storeId            String
+  amountPesewas      Int
+  ledgerIds          String[]         // Flipped to WITHDRAWN on complete
+  status             WithdrawalStatus @default(PENDING)
+  payoutMethod       PayoutMethod     @default(MANUAL_MOMO)
+  payoutReference    String?
+  requestedAt        DateTime         @default(now())
+  completedAt        DateTime?
+  completedByUserId  String?
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id                 String      @id @default(uuid())
+  userId             String?
+  storeId            String
+  bundleId           String
+  recipientPhone     String
+  status             OrderStatus @default(PENDING)
+  supplierPurchaseId String?
+  supplierOrderRef   String?     @unique
+  idempotencyKey     String      @unique
+  paystackRef        String?     @unique
+  amountPaid         Int
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  // Relations
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  store   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  bundle  Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  ledgers Ledger[]
+}
+
+model Bundle {
+  id             String       @id // Unique identifier, can match Supplier product ID
+  network        NetworkType
+  label          String
+  dataAmountGB   Float
+  active         Boolean      @default(true)
+  storePricings  StorePricing[]
+  orders         Order[]
+}
+
+model SupplierAccount {
+  id                  String   @id @default(uuid())
+  balancePesewas      Int      @default(0)
+  rateLimitRemaining  Int      @default(60)
+  rateLimitResetAt    DateTime @default(now())
+  lastSyncedAt        DateTime @default(now())
+}
+
+model WalletTransaction {
+  id               String                @id @default(uuid())
+  userId           String
+  type             WalletTransactionType
+  amountPesewas    Int
+  balanceAfter     Int
+  referenceOrderId String?
+  createdAt        DateTime              @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
