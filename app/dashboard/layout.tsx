@@ -123,10 +123,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </div>
     );
   }
-
-  const dbUser = await prisma.user.findUnique({
-    where: { id: userId },
-  });
   const isPlatformAdmin = dbUser?.accountType === "ROOT";
 
   return (
