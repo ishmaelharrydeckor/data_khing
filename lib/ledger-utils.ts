@@ -9,9 +9,7 @@ async function getWholesaleCost(bundleId: string): Promise<number> {
     where: { id: bundleId },
   });
   if (!bundle) return 0;
-  // If wholesale pricing is stored on Bundle (which it is, see placeOrder product catalog)
-  // we can mock a default wholesale price if not found.
-  // For safety, let's assume default prices for standard bundles.
+  
   const defaults: Record<string, number> = {
     "mtn-1gb": 300,
     "mtn-5gb": 1200,
@@ -20,17 +18,17 @@ async function getWholesaleCost(bundleId: string): Promise<number> {
     "telecel-5gb": 1100,
     "at-3gb": 600,
   };
-  return defaults[bundleId] || 1000; // default 10 GHS wholesale if unknown
+  return defaults[bundleId] || 1000;
 }
 
 /**
- * Resolves what a specific store charges for a bundle.
- * If no pricing is set, falls back to what the store pays upstream + default spread, or parent price.
+ * Resolves what a specific user charges for a bundle.
+ * If no pricing is set, falls back to what the user pays upstream + default spread, or parent price.
  */
-async function getStoreBundlePricing(storeId: string, bundleId: string): Promise<{ customerPrice: number; subAgentPrice: number }> {
-  const pricing = await prisma.storePricing.findUnique({
+export async function getUserBundlePricing(userId: string, bundleId: string): Promise<{ customerPrice: number; subAgentPrice: number }> {
+  const pricing = await prisma.userPricing.findUnique({
     where: {
-      storeId_bundleId: { storeId, bundleId },
+      userId_bundleId: { userId, bundleId },
     },
   });
 
@@ -41,17 +39,16 @@ async function getStoreBundlePricing(storeId: string, bundleId: string): Promise
     };
   }
 
-  // Fallback if no config: look up store parent to see parent sub-agent price
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    select: { parentStoreId: true },
+  // Fallback if no config: look up user parent to see parent sub-agent price
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { parentUserId: true },
   });
 
   let wholesale = await getWholesaleCost(bundleId);
 
-  if (store?.parentStoreId) {
-    const parentPricing = await getStoreBundlePricing(store.parentStoreId, bundleId);
-    // Charge slightly more than parent agent price
+  if (user?.parentUserId) {
+    const parentPricing = await getUserBundlePricing(user.parentUserId, bundleId);
     return {
       customerPrice: Math.round(parentPricing.subAgentPrice * 1.15),
       subAgentPrice: Math.round(parentPricing.subAgentPrice * 1.08),
@@ -67,39 +64,36 @@ async function getStoreBundlePricing(storeId: string, bundleId: string): Promise
 
 /**
  * Creates cascading ledger entries for a successful order.
- * Walks parentStoreId upward until null.
+ * Walks parentUserId upward until null.
  */
 export async function createCascadingLedgerEntries(orderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { store: true },
   });
 
   if (!order) throw new Error("Order not found");
 
   const bundleId = order.bundleId;
-  let currentStoreId: string | null = order.storeId;
+  let currentUserId: string | null = order.sellingUserId;
   let tierDepth = 0;
-  let childSellPrice = order.amountPaid; // Initial sell price is what customer paid
 
-  while (currentStoreId !== null) {
-    const currentStore: any = await prisma.store.findUnique({
-      where: { id: currentStoreId },
+  while (currentUserId !== null) {
+    const currentUser: any = await prisma.user.findUnique({
+      where: { id: currentUserId },
     });
 
-    if (!currentStore) break;
+    if (!currentUser) break;
 
     let buyPrice = 0;
     let sellPrice = 0;
 
     if (tierDepth === 0) {
-      // First tier: Selling store.
-      // Customer paid `order.amountPaid`. That is the sell price.
+      // First tier: Selling reseller user.
       sellPrice = order.amountPaid;
 
-      if (currentStore.parentStoreId) {
-        // Buy price = what parent store charges sub-agents
-        const parentPricing = await getStoreBundlePricing(currentStore.parentStoreId, bundleId);
+      if (currentUser.parentUserId) {
+        // Buy price = what parent charges sub-agents
+        const parentPricing = await getUserBundlePricing(currentUser.parentUserId, bundleId);
         buyPrice = parentPricing.subAgentPrice;
       } else {
         // No parent: buy price is wholesale cost
@@ -107,26 +101,23 @@ export async function createCascadingLedgerEntries(orderId: string): Promise<voi
       }
     } else {
       // Upper tiers (parents)
-      // Sell price = what this store charged the tier below (its own agent pricing)
-      const currentPricing = await getStoreBundlePricing(currentStoreId, bundleId);
+      const currentPricing = await getUserBundlePricing(currentUserId, bundleId);
       sellPrice = currentPricing.subAgentPrice;
 
-      if (currentStore.parentStoreId) {
-        // Buy price = what parent charges agents
-        const parentPricing = await getStoreBundlePricing(currentStore.parentStoreId, bundleId);
+      if (currentUser.parentUserId) {
+        const parentPricing = await getUserBundlePricing(currentUser.parentUserId, bundleId);
         buyPrice = parentPricing.subAgentPrice;
       } else {
-        // No parent: buy price is wholesale cost
         buyPrice = await getWholesaleCost(bundleId);
       }
     }
 
     const profit = sellPrice - buyPrice;
 
-    // Create Ledger row for this tier
+    // Create Ledger row for this user
     await prisma.ledger.create({
       data: {
-        storeId: currentStoreId,
+        userId: currentUserId,
         orderId: order.id,
         tierDepth,
         buyPricePesewas: buyPrice,
@@ -137,24 +128,24 @@ export async function createCascadingLedgerEntries(orderId: string): Promise<voi
     });
 
     // Move to next tier
-    currentStoreId = currentStore.parentStoreId;
+    currentUserId = currentUser.parentUserId;
     tierDepth++;
   }
 }
 
 /**
- * Creates a ledger entry to credit the approving store when an application is approved.
+ * Creates a ledger entry to credit the approving user when an application is approved.
  */
 export async function createApplicationApprovalLedger(applicationId: string): Promise<void> {
   const app = await prisma.agentApplication.findUnique({
     where: { id: applicationId },
   });
 
-  if (!app || !app.parentStoreId) return;
+  if (!app || !app.parentUserId) return;
 
   await prisma.ledger.create({
     data: {
-      storeId: app.parentStoreId,
+      userId: app.parentUserId,
       applicationId: app.id,
       tierDepth: 0,
       buyPricePesewas: 0,

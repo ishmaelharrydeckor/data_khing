@@ -33,15 +33,10 @@ export async function createOrderAction(formData: {
       return { success: false, error: "Bundle not found." };
     }
 
-    // Resolve customer price for this store
-    const pricing = await prisma.storePricing.findUnique({
-      where: {
-        storeId_bundleId: { storeId, bundleId },
-      },
-    });
-
-    // Fallback if no custom pricing is set
-    let amountPaid = pricing ? pricing.priceForCustomersPesewas : Math.round(bundle.dataAmountGB * 150 + 500); // GHS 15/GB + 5 GHS default
+    // Resolve customer price for the owner of the store
+    const { getUserBundlePricing } = await import("@/lib/ledger-utils");
+    const pricing = await getUserBundlePricing(store.ownerUserId, bundleId);
+    let amountPaid = pricing.customerPrice;
 
     // 2. Generate references
     const idempotencyKey = crypto.randomUUID();
@@ -62,11 +57,21 @@ export async function createOrderAction(formData: {
       callbackUrl
     );
 
+    // Look up if user session exists to link customerUserId
+    const { getServerSession } = await import("next-auth");
+    const { authOptions } = await import("@/lib/auth");
+    const session = await getServerSession(authOptions);
+    const buyerUser = session?.user?.email 
+      ? await prisma.user.findUnique({ where: { email: session.user.email } }) 
+      : null;
+
     // 4. Create PENDING Order
     await prisma.order.create({
       data: {
         id: orderId,
         storeId,
+        sellingUserId: store.ownerUserId,
+        customerUserId: buyerUser?.id || null,
         bundleId,
         recipientPhone,
         status: OrderStatus.PENDING,

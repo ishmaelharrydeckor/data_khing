@@ -31,16 +31,16 @@ export default async function StorefrontPage({ params }: { params: Promise<{ sto
     where: { active: true },
   });
 
-  // Get customized prices for this store
-  const storePricings = await prisma.storePricing.findMany({
-    where: { storeId: store.id },
+  // Get customized prices for the owner of this store
+  const userPricings = await prisma.userPricing.findMany({
+    where: { userId: store.ownerUserId },
   });
 
   // Map bundles to store prices
   const mappedBundles = bundles.map((b) => {
-    const sp = storePricings.find((p) => p.bundleId === b.id);
+    const up = userPricings.find((p) => p.bundleId === b.id);
     // Fallback default pricing if not explicitly set
-    const price = sp ? sp.priceForCustomersPesewas : Math.round(b.dataAmountGB * 150 + 500);
+    const price = up ? up.priceForCustomersPesewas : Math.round(b.dataAmountGB * 150 + 500);
     return {
       id: b.id,
       label: b.label,

@@ -6,11 +6,11 @@ import { toggleAgentStatusAction } from "@/app/actions/agents";
 
 export function AgentStatusToggle({
   storeId,
-  agentStoreId,
+  agentUserId,
   isSuspended,
 }: {
   storeId: string;
-  agentStoreId: string;
+  agentUserId: string;
   isSuspended: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -20,7 +20,7 @@ export function AgentStatusToggle({
     startTransition(async () => {
       const res = await toggleAgentStatusAction({
         storeId,
-        agentStoreId,
+        agentUserId,
         action: isSuspended ? "REACTIVATE" : "SUSPEND",
       });
       if (res.success) {

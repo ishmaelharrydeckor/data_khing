@@ -17,9 +17,9 @@ export default async function ApplicationsPage() {
     redirect("/dashboard/my-stores");
   }
 
-  // Fetch applications where parentStoreId matches this active store
+  // Fetch applications where parentUserId matches this user
   const apps = await prisma.agentApplication.findMany({
-    where: { parentStoreId: activeStore.id },
+    where: { parentUserId: userId },
     orderBy: { createdAt: "desc" },
     include: { applicant: true },
   });

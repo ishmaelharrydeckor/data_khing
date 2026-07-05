@@ -12,30 +12,22 @@ async function getRequiredSession() {
 }
 
 export async function requestWithdrawalAction(formData: {
-  storeId: string;
+  storeId: string; // Kept for interface compatibility
   amountPesewas: number;
   payoutMethod: PayoutMethod;
 }) {
   try {
     const user = await getRequiredSession();
-    const { storeId, amountPesewas, payoutMethod } = formData;
+    const { amountPesewas, payoutMethod } = formData;
 
     if (amountPesewas <= 0) {
       return { success: false, error: "Amount must be greater than zero." };
     }
 
-    const store = await prisma.store.findUnique({
-      where: { id: storeId },
-    });
-
-    if (!store || store.ownerUserId !== user.id) {
-      return { success: false, error: "Unauthorized access." };
-    }
-
-    // Get all AVAILABLE ledger rows for this store
+    // Get all AVAILABLE ledger rows for this user
     const availableLedgers = await prisma.ledger.findMany({
       where: {
-        storeId,
+        userId: user.id,
         status: LedgerStatus.AVAILABLE,
       },
       orderBy: { createdAt: "asc" },
@@ -57,10 +49,10 @@ export async function requestWithdrawalAction(formData: {
       selectedLedgerIds.push(row.id);
     }
 
-    // Create withdrawal request
+    // Create withdrawal request associated with the User
     await prisma.withdrawal.create({
       data: {
-        storeId,
+        userId: user.id,
         amountPesewas,
         ledgerIds: selectedLedgerIds,
         status: WithdrawalStatus.PENDING,

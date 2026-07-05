@@ -17,11 +17,11 @@ export default async function AgentsPage() {
     redirect("/dashboard/my-stores");
   }
 
-  // Get direct children only
-  const agents = await prisma.store.findMany({
-    where: { parentStoreId: activeStore.id },
+  // Get direct child agent users
+  const agents = await prisma.user.findMany({
+    where: { parentUserId: userId },
     orderBy: { createdAt: "desc" },
-    include: { owner: true },
+    include: { stores: true },
   });
 
   return (
@@ -29,7 +29,7 @@ export default async function AgentsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-white">My Direct Agents</h1>
         <p className="text-sm text-slate-400">
-          Manage your direct reseller agent downlines. Suspend or reactivate their store access.
+          Manage your direct reseller agent downlines. Suspend or reactivate their user privileges.
         </p>
       </div>
 
@@ -44,9 +44,9 @@ export default async function AgentsPage() {
             <table className="w-full text-left text-sm text-slate-400">
               <thead className="text-xs uppercase text-slate-500 border-b border-slate-900">
                 <tr>
-                  <th className="py-3">Agent / Store Name</th>
-                  <th className="py-3">Slug Path</th>
-                  <th className="py-3">Owner Contact</th>
+                  <th className="py-3">Agent Name</th>
+                  <th className="py-3">Active Storefront Skins</th>
+                  <th className="py-3">Contact Details</th>
                   <th className="py-3">Status</th>
                   <th className="py-3">Actions</th>
                 </tr>
@@ -56,11 +56,31 @@ export default async function AgentsPage() {
                   const isSuspended = agent.status === "SUSPENDED";
                   return (
                     <tr key={agent.id} className="hover:bg-slate-900/20">
-                      <td className="py-4 font-semibold text-slate-200">{agent.name}</td>
-                      <td className="py-4 font-mono text-xs text-slate-500">/shop/{agent.slug}</td>
+                      <td className="py-4 font-semibold text-slate-200">
+                        {agent.name || "Unnamed Agent"}
+                      </td>
                       <td className="py-4">
-                        <div className="text-xs text-slate-350">{agent.owner.email}</div>
-                        {agent.owner.phone && <div className="text-[10px] text-slate-500">{agent.owner.phone}</div>}
+                        {agent.stores.length === 0 ? (
+                          <span className="text-xs text-slate-500 italic">No storefront skins</span>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            {agent.stores.map((s) => (
+                              <a
+                                key={s.id}
+                                href={`/shop/${s.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-mono text-xs text-indigo-400 hover:underline"
+                              >
+                                /shop/{s.slug} ({s.name})
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4">
+                        <div className="text-xs text-slate-350">{agent.email}</div>
+                        {agent.phone && <div className="text-[10px] text-slate-500">{agent.phone}</div>}
                       </td>
                       <td className="py-4">
                         <span
@@ -78,7 +98,7 @@ export default async function AgentsPage() {
                       <td className="py-4">
                         <AgentStatusToggle
                           storeId={activeStore.id}
-                          agentStoreId={agent.id}
+                          agentUserId={agent.id}
                           isSuspended={isSuspended}
                         />
                       </td>

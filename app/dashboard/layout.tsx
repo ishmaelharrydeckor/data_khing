@@ -28,6 +28,62 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const userId = (session.user as any).id;
   const userRole = (session.user as any).role;
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (dbUser?.status === "PENDING") {
+    const pendingApp = await prisma.agentApplication.findFirst({
+      where: { applicantUserId: userId },
+      orderBy: { createdAt: "desc" },
+    });
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-center">
+        <div className="w-full max-w-md rounded-2xl border border-slate-905 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-xl">
+          <h2 className="text-2xl font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+            Under Review
+          </h2>
+          <p className="text-sm text-slate-300 mt-4 leading-relaxed">
+            Your reseller agent application {pendingApp ? `for "${pendingApp.storeName}"` : ""} is currently under review.
+          </p>
+          <p className="text-xs text-slate-500 mt-2 leading-relaxed font-medium">
+            You will gain access to your dashboard and storefront once your parent administrator approves your application.
+          </p>
+          <Link
+            href="/"
+            className="mt-6 block w-full rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-705 py-3 font-semibold text-slate-300 hover:text-white transition-all text-sm cursor-pointer"
+          >
+            Back to Homepage
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (dbUser?.status === "SUSPENDED") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-center">
+        <div className="w-full max-w-md rounded-2xl border border-red-950 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-xl">
+          <h2 className="text-2xl font-black bg-gradient-to-r from-red-450 to-rose-500 bg-clip-text text-transparent">
+            Account Suspended
+          </h2>
+          <p className="text-sm text-slate-300 mt-4 leading-relaxed">
+            Your reseller account has been suspended.
+          </p>
+          <p className="text-xs text-slate-500 mt-2 font-medium">
+            Please contact support or your upstream agent supervisor for assistance.
+          </p>
+          <Link
+            href="/"
+            className="mt-6 block w-full rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-705 py-3 font-semibold text-slate-300 hover:text-white transition-all text-sm cursor-pointer"
+          >
+            Back to Homepage
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // Get active store context with ownership verification
   const activeStore = await getActiveStore(userId);
 
@@ -68,7 +124,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     );
   }
 
-  const isPlatformAdmin = activeStore?.storeType === "ROOT";
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+  const isPlatformAdmin = dbUser?.accountType === "ROOT";
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">

@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   // Sum available ledger profits
   const availableLedgers = await prisma.ledger.findMany({
     where: {
-      storeId: activeStore.id,
+      userId: userId,
       status: LedgerStatus.AVAILABLE,
     },
   });
@@ -29,7 +29,7 @@ export default async function DashboardPage() {
 
   // Sum total lifetime earnings
   const allLedgers = await prisma.ledger.findMany({
-    where: { storeId: activeStore.id },
+    where: { userId: userId },
   });
   const lifetimeEarnings = allLedgers.reduce((acc, row) => acc + row.amountPesewas, 0);
 
@@ -39,8 +39,8 @@ export default async function DashboardPage() {
   });
 
   // Direct agent count
-  const directAgents = await prisma.store.count({
-    where: { parentStoreId: activeStore.id },
+  const directAgents = await prisma.user.count({
+    where: { parentUserId: userId },
   });
 
   // 2. Recent Orders List
@@ -52,7 +52,10 @@ export default async function DashboardPage() {
   });
 
   // 3. Supplier Account Balance (Platform admin-only stats)
-  const isPlatformAdmin = activeStore.storeType === "ROOT";
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+  const isPlatformAdmin = dbUser?.accountType === "ROOT";
   let supplierBalance = 0;
   if (isPlatformAdmin) {
     const supplierAccount = await prisma.supplierAccount.findFirst();

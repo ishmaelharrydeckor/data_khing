@@ -20,19 +20,22 @@ export default async function WithdrawalsPage() {
   // Calculate available profit balance
   const availableLedgers = await prisma.ledger.findMany({
     where: {
-      storeId: activeStore.id,
+      userId: userId,
       status: LedgerStatus.AVAILABLE,
     },
   });
   const availableBalancePesewas = availableLedgers.reduce((acc, row) => acc + row.amountPesewas, 0);
 
-  // Get active store withdrawal history
+  // Get user withdrawal history
   const withdrawals = await prisma.withdrawal.findMany({
-    where: { storeId: activeStore.id },
+    where: { userId: userId },
     orderBy: { requestedAt: "desc" },
   });
 
-  const isAdmin = activeStore.storeType === "ROOT";
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+  const isAdmin = dbUser?.accountType === "ROOT";
 
   // If Admin, query all platform-wide pending withdrawals
   let pendingAdminWithdrawals: any[] = [];
@@ -40,16 +43,19 @@ export default async function WithdrawalsPage() {
     const rawPending = await prisma.withdrawal.findMany({
       where: { status: WithdrawalStatus.PENDING },
       orderBy: { requestedAt: "asc" },
-      include: { store: true },
+      include: { user: { include: { stores: true } } },
     });
 
-    pendingAdminWithdrawals = rawPending.map((w) => ({
-      id: w.id,
-      storeName: w.store.name,
-      amountPesewas: w.amountPesewas,
-      payoutMethod: w.payoutMethod,
-      requestedAt: w.requestedAt.toISOString(),
-    }));
+    pendingAdminWithdrawals = rawPending.map((w) => {
+      const agentStore = w.user.stores[0];
+      return {
+        id: w.id,
+        storeName: agentStore ? agentStore.name : (w.user.name || w.user.email),
+        amountPesewas: w.amountPesewas,
+        payoutMethod: w.payoutMethod,
+        requestedAt: w.requestedAt.toISOString(),
+      };
+    });
   }
 
   return (

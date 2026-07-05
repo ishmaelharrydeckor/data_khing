@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { StoreType, StoreStatus } from "@prisma/client";
+import { StoreStatus } from "@prisma/client";
 import { cookies } from "next/headers";
 
 // Helpers to get current user session
@@ -57,21 +57,30 @@ export async function createIndependentStoreAction(formData: { name: string; slu
     }
   }
 
-  // 4. Create independent store
+  // 4. Update user accountType if currently null (means they are self-serving independent resellers)
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (dbUser && dbUser.accountType === null) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        accountType: "INDEPENDENT",
+        status: "ACTIVE",
+      },
+    });
+  }
+
+  // 5. Create store presentation skin
   const store = await prisma.store.create({
     data: {
       ownerUserId: user.id,
-      parentStoreId: null,
       slug: cleanSlug,
       name: formData.name,
       status: StoreStatus.ACTIVE,
-      storeType: StoreType.INDEPENDENT,
       displayName: formData.name,
-      ancestorPath: "root", // standalone
     },
   });
 
-  // 5. Update active store cookie
+  // 6. Update active store cookie
   const cookieStore = await cookies();
   cookieStore.set("active_store_id", store.id, { path: "/" });
 

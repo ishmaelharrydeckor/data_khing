@@ -1,0 +1,293 @@
+{
+  "timestamp": "2026-07-05T05:18:59.462Z",
+  "users": [
+    {
+      "id": "7b4abc90-bb3a-4b32-a7ce-827fd1659eb8",
+      "name": "Platform Admin",
+      "email": "admin@datakhing.com",
+      "phone": null,
+      "passwordHash": "$2b$10$TiwEluJayJKZcoj7oww9EOc0KN2dQEXj9z.CyueL9wtrBtwiqnzhC",
+      "role": "AGENT",
+      "createdAt": "2026-07-04T09:14:21.412Z"
+    },
+    {
+      "id": "7c8e43ca-2ec5-46d4-88bb-8a828de7735f",
+      "name": "Ishmael Harry-Deckor",
+      "email": "ishmaelharrydeckor@gmail.com",
+      "phone": "0555908380",
+      "passwordHash": "$2b$10$O1iWdfZNDXNleZl.J5CmdetqQXrXwFbfJjGMeDWtFrGG53VNJl7Da",
+      "role": "USER",
+      "createdAt": "2026-07-04T10:10:22.469Z"
+    }
+  ],
+  "stores": [
+    {
+      "id": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "ownerUserId": "7b4abc90-bb3a-4b32-a7ce-827fd1659eb8",
+      "parentStoreId": null,
+      "slug": "root",
+      "name": "DataKhing Root Store",
+      "status": "ACTIVE",
+      "storeType": "ROOT",
+      "displayName": "DataKhing",
+      "logoUrl": null,
+      "primaryColor": "#4F46E5",
+      "supportEmail": "support@datakhing.com",
+      "contactPhone": "0240000000",
+      "footerText": "© 2026 DataKhing. All rights reserved.",
+      "ancestorPath": "root",
+      "createdAt": "2026-07-04T09:14:21.622Z"
+    },
+    {
+      "id": "3f0ca2bb-dc25-4e0e-8adf-4dfed5791608",
+      "ownerUserId": "7b4abc90-bb3a-4b32-a7ce-827fd1659eb8",
+      "parentStoreId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "slug": "50-9346",
+      "name": "50",
+      "status": "ACTIVE",
+      "storeType": "AGENT",
+      "displayName": "50",
+      "logoUrl": null,
+      "primaryColor": "#4F46E5",
+      "supportEmail": null,
+      "contactPhone": null,
+      "footerText": null,
+      "ancestorPath": "root/518c1b14-5478-4fce-b383-c7e2394c5411",
+      "createdAt": "2026-07-04T10:08:56.975Z"
+    }
+  ],
+  "pricings": [
+    {
+      "id": "d2a71a92-fb0c-447f-984e-b149f786f557",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "bundleId": "mtn-1gb",
+      "priceForCustomersPesewas": 400,
+      "priceForSubAgentsPesewas": 350,
+      "updatedAt": "2026-07-04T09:14:23.534Z"
+    },
+    {
+      "id": "8f521fbc-d796-48ec-8335-8b9699569e36",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "bundleId": "mtn-5gb",
+      "priceForCustomersPesewas": 1500,
+      "priceForSubAgentsPesewas": 1300,
+      "updatedAt": "2026-07-04T09:14:24.986Z"
+    },
+    {
+      "id": "9cd3593f-ddff-4495-99b6-85671fb212d6",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "bundleId": "mtn-10gb",
+      "priceForCustomersPesewas": 2800,
+      "priceForSubAgentsPesewas": 2400,
+      "updatedAt": "2026-07-04T09:14:26.411Z"
+    },
+    {
+      "id": "0bce533e-b7ce-4843-bdba-760117ecf3b4",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "bundleId": "telecel-2gb",
+      "priceForCustomersPesewas": 700,
+      "priceForSubAgentsPesewas": 600,
+      "updatedAt": "2026-07-04T09:14:27.898Z"
+    },
+    {
+      "id": "8ffb2c5c-3cbc-424c-bebf-b4e307b3ee6b",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "bundleId": "telecel-5gb",
+      "priceForCustomersPesewas": 1400,
+      "priceForSubAgentsPesewas": 1200,
+      "updatedAt": "2026-07-04T09:14:29.283Z"
+    },
+    {
+      "id": "dfbd9041-08bb-4315-9524-d1da8196fabc",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "bundleId": "at-3gb",
+      "priceForCustomersPesewas": 800,
+      "priceForSubAgentsPesewas": 700,
+      "updatedAt": "2026-07-04T09:14:30.653Z"
+    },
+    {
+      "id": "489a7210-939d-446f-b5ec-474d54219f81",
+      "storeId": "3f0ca2bb-dc25-4e0e-8adf-4dfed5791608",
+      "bundleId": "mtn-1gb",
+      "priceForCustomersPesewas": 350,
+      "priceForSubAgentsPesewas": 368,
+      "updatedAt": "2026-07-04T10:08:57.000Z"
+    },
+    {
+      "id": "ace3f674-56f4-453c-a8ee-b5778e780077",
+      "storeId": "3f0ca2bb-dc25-4e0e-8adf-4dfed5791608",
+      "bundleId": "mtn-5gb",
+      "priceForCustomersPesewas": 1300,
+      "priceForSubAgentsPesewas": 1365,
+      "updatedAt": "2026-07-04T10:08:57.009Z"
+    },
+    {
+      "id": "f814f7ad-024a-43e9-9615-0fc746d1761c",
+      "storeId": "3f0ca2bb-dc25-4e0e-8adf-4dfed5791608",
+      "bundleId": "mtn-10gb",
+      "priceForCustomersPesewas": 2400,
+      "priceForSubAgentsPesewas": 2520,
+      "updatedAt": "2026-07-04T10:08:57.018Z"
+    },
+    {
+      "id": "0404de4f-b883-4f23-aa68-999d023916db",
+      "storeId": "3f0ca2bb-dc25-4e0e-8adf-4dfed5791608",
+      "bundleId": "telecel-2gb",
+      "priceForCustomersPesewas": 600,
+      "priceForSubAgentsPesewas": 630,
+      "updatedAt": "2026-07-04T10:08:57.023Z"
+    },
+    {
+      "id": "e2228fb4-f189-4712-88e3-ae7a14c3ea5f",
+      "storeId": "3f0ca2bb-dc25-4e0e-8adf-4dfed5791608",
+      "bundleId": "telecel-5gb",
+      "priceForCustomersPesewas": 1200,
+      "priceForSubAgentsPesewas": 1260,
+      "updatedAt": "2026-07-04T10:08:57.028Z"
+    },
+    {
+      "id": "156bad1f-31f0-4ca1-87a2-4f72bdb0efe0",
+      "storeId": "3f0ca2bb-dc25-4e0e-8adf-4dfed5791608",
+      "bundleId": "at-3gb",
+      "priceForCustomersPesewas": 700,
+      "priceForSubAgentsPesewas": 735,
+      "updatedAt": "2026-07-04T10:08:57.034Z"
+    }
+  ],
+  "applications": [
+    {
+      "id": "7c4302fa-b493-44a6-bb63-fde695fcc4c8",
+      "applicantUserId": "7b4abc90-bb3a-4b32-a7ce-827fd1659eb8",
+      "parentStoreId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "storeName": "domain",
+      "applicationFeePesewas": 5000,
+      "paymentRef": "pay_mock_u4ukpwsl5zl",
+      "status": "PENDING_PAYMENT",
+      "reviewedByUserId": null,
+      "reviewedAt": null,
+      "createdAt": "2026-07-04T10:02:46.447Z"
+    },
+    {
+      "id": "f5fc0a1b-ae9d-4832-8c07-659c1aaf6028",
+      "applicantUserId": "7b4abc90-bb3a-4b32-a7ce-827fd1659eb8",
+      "parentStoreId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "storeName": "50",
+      "applicationFeePesewas": 5000,
+      "paymentRef": "pay_mock_tgfu9lpp349",
+      "status": "APPROVED",
+      "reviewedByUserId": "7b4abc90-bb3a-4b32-a7ce-827fd1659eb8",
+      "reviewedAt": "2026-07-04T10:08:57.039Z",
+      "createdAt": "2026-07-04T10:07:54.507Z"
+    },
+    {
+      "id": "d6723a3e-ace1-45df-b374-9e41da89c297",
+      "applicantUserId": "7b4abc90-bb3a-4b32-a7ce-827fd1659eb8",
+      "parentStoreId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "storeName": "Joy data hub",
+      "applicationFeePesewas": 5000,
+      "paymentRef": "pay_mock_dt5mdzc2k1p",
+      "status": "PENDING_REVIEW",
+      "reviewedByUserId": null,
+      "reviewedAt": null,
+      "createdAt": "2026-07-04T17:25:21.480Z"
+    }
+  ],
+  "ledgers": [
+    {
+      "id": "20b97da4-1809-4240-af74-523cc1b7eee0",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "orderId": "e5829fe0-d264-4252-9e11-f8ea4a7834a5",
+      "applicationId": null,
+      "tierDepth": 0,
+      "buyPricePesewas": 300,
+      "sellPricePesewas": 400,
+      "amountPesewas": 100,
+      "status": "AVAILABLE",
+      "createdAt": "2026-07-04T10:08:37.753Z"
+    },
+    {
+      "id": "2abd6539-62c0-46b2-9157-0f493cb4982a",
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "orderId": null,
+      "applicationId": "f5fc0a1b-ae9d-4832-8c07-659c1aaf6028",
+      "tierDepth": 0,
+      "buyPricePesewas": 0,
+      "sellPricePesewas": 5000,
+      "amountPesewas": 5000,
+      "status": "AVAILABLE",
+      "createdAt": "2026-07-04T10:08:57.061Z"
+    }
+  ],
+  "withdrawals": [],
+  "orders": [
+    {
+      "id": "e5829fe0-d264-4252-9e11-f8ea4a7834a5",
+      "userId": null,
+      "storeId": "518c1b14-5478-4fce-b383-c7e2394c5411",
+      "bundleId": "mtn-1gb",
+      "recipientPhone": "0243622510",
+      "status": "DELIVERED",
+      "supplierPurchaseId": "pur_c5f7a0c7860551a8",
+      "supplierOrderRef": "ref_790fe65c2e2a509e",
+      "idempotencyKey": "e84f3b80-31cf-4707-a4c1-68af7ef0a651",
+      "paystackRef": "pay_mock_zw9o5iqealh",
+      "amountPaid": 400,
+      "createdAt": "2026-07-04T10:08:37.325Z",
+      "updatedAt": "2026-07-04T10:08:37.733Z"
+    }
+  ],
+  "bundles": [
+    {
+      "id": "mtn-1gb",
+      "network": "YELLO",
+      "label": "MTN 1GB",
+      "dataAmountGB": 1,
+      "active": true
+    },
+    {
+      "id": "mtn-5gb",
+      "network": "YELLO",
+      "label": "MTN 5GB",
+      "dataAmountGB": 5,
+      "active": true
+    },
+    {
+      "id": "mtn-10gb",
+      "network": "YELLO",
+      "label": "MTN 10GB",
+      "dataAmountGB": 10,
+      "active": true
+    },
+    {
+      "id": "telecel-2gb",
+      "network": "TELECEL",
+      "label": "Telecel 2GB",
+      "dataAmountGB": 2,
+      "active": true
+    },
+    {
+      "id": "telecel-5gb",
+      "network": "TELECEL",
+      "label": "Telecel 5GB",
+      "dataAmountGB": 5,
+      "active": true
+    },
+    {
+      "id": "at-3gb",
+      "network": "AT_PREMIUM",
+      "label": "AirtelTigo 3GB",
+      "dataAmountGB": 3,
+      "active": true
+    }
+  ],
+  "supplierAccounts": [
+    {
+      "id": "e63e2738-3677-4d52-8862-9633053e1af2",
+      "balancePesewas": 999700,
+      "rateLimitRemaining": 60,
+      "rateLimitResetAt": "2026-07-04T09:14:31.554Z",
+      "lastSyncedAt": "2026-07-04T10:08:37.717Z"
+    }
+  ],
+  "walletTransactions": []
+}

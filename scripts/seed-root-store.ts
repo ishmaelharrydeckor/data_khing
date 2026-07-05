@@ -1,4 +1,4 @@
-import { PrismaClient, Role, StoreType, StoreStatus } from "@prisma/client";
+import { PrismaClient, Role, AccountType, UserStatus, StoreStatus } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
@@ -11,17 +11,16 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("Starting root store seeding...");
 
-  // 1. Check if ROOT store already exists
-  const existingRoot = await prisma.store.findFirst({
-    where: { storeType: StoreType.ROOT },
+  // 1. Check if ROOT user already exists
+  const existingRootUser = await prisma.user.findFirst({
+    where: { accountType: AccountType.ROOT },
   });
 
-  let rootStore = existingRoot;
+  let adminUser = existingRootUser;
 
-  if (!existingRoot) {
-    // 2. Find or create an admin user
+  if (!existingRootUser) {
     const adminEmail = "admin@datakhing.com";
-    let adminUser = await prisma.user.findUnique({
+    adminUser = await prisma.user.findUnique({
       where: { email: adminEmail },
     });
 
@@ -34,37 +33,52 @@ async function main() {
           name: "Platform Admin",
           passwordHash,
           role: Role.ADMIN,
+          accountType: AccountType.ROOT,
+          status: UserStatus.ACTIVE,
+          ancestorPath: "root",
+        },
+      });
+    } else {
+      adminUser = await prisma.user.update({
+        where: { id: adminUser.id },
+        data: {
+          accountType: AccountType.ROOT,
+          status: UserStatus.ACTIVE,
         },
       });
     }
+  }
 
-    // 3. Create the ROOT store
+  if (!adminUser) {
+    throw new Error("Failed to initialize or retrieve root admin user.");
+  }
+
+  // 2. Check if admin user's root storefront exists
+  let rootStore = await prisma.store.findFirst({
+    where: { ownerUserId: adminUser.id },
+  });
+
+  if (!rootStore) {
+    console.log("Creating default root storefront skin...");
     rootStore = await prisma.store.create({
       data: {
         ownerUserId: adminUser.id,
-        parentStoreId: null,
         slug: "root",
         name: "DataKhing Root Store",
         status: StoreStatus.ACTIVE,
-        storeType: StoreType.ROOT,
         displayName: "DataKhing",
         primaryColor: "#4F46E5",
         supportEmail: "support@datakhing.com",
         contactPhone: "0240000000",
         footerText: "© 2026 DataKhing. All rights reserved.",
-        ancestorPath: "root",
       },
     });
-    console.log(`Successfully seeded root store! ID: ${rootStore.id}`);
+    console.log(`Successfully seeded root storefront! ID: ${rootStore.id}`);
   } else {
-    console.log(`Root store already exists: ${existingRoot.id} (slug: ${existingRoot.slug}) — updating bundles & pricing`);
+    console.log(`Root storefront already exists: ${rootStore.id} (slug: ${rootStore.slug})`);
   }
 
-  if (!rootStore) {
-    throw new Error("Failed to initialize or retrieve root store.");
-  }
-
-  // 4. Create standard Bundles and associate prices
+  // 3. Create standard Bundles and associate prices
   const bundlesData = [
     { id: "mtn-1gb", network: "YELLO" as const, label: "MTN 1GB", dataAmountGB: 1.0, customer: 400, agent: 350 },
     { id: "mtn-5gb", network: "YELLO" as const, label: "MTN 5GB", dataAmountGB: 5.0, customer: 1500, agent: 1300 },
@@ -88,14 +102,14 @@ async function main() {
       });
     }
 
-    // Seed pricing for Root
-    await prisma.storePricing.upsert({
+    // Seed pricing for Root Admin User
+    await prisma.userPricing.upsert({
       where: {
-        storeId_bundleId: { storeId: rootStore.id, bundleId: b.id },
+        userId_bundleId: { userId: adminUser.id, bundleId: b.id },
       },
       update: {},
       create: {
-        storeId: rootStore.id,
+        userId: adminUser.id,
         bundleId: b.id,
         priceForCustomersPesewas: b.customer,
         priceForSubAgentsPesewas: b.agent,

@@ -169,24 +169,9 @@ export default async function BecomeAResellerPage({ params }: { params: Promise<
             <p className="text-sm text-slate-500 mt-2">Enter your business details below to set up your store.</p>
           </div>
 
-          {!session?.user ? (
-            <div className="rounded-2xl border border-slate-850 bg-slate-900/30 p-8 text-center shadow-xl">
-              <p className="text-slate-400 text-sm mb-6">
-                Please sign in or register an account before submitting your reseller application.
-              </p>
-              <Link
-                href="/login"
-                className="inline-block rounded-full px-8 py-3 text-sm font-bold text-white transition-all shadow-md"
-                style={{ backgroundColor: primaryColor }}
-              >
-                Sign In / Register
-              </Link>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-slate-900 bg-slate-900/10 p-6 shadow-xl">
-              <ResellerApplicationForm parentStoreId={store.id} primaryColor={primaryColor} />
-            </div>
-          )}
+          <div className="rounded-2xl border border-slate-900 bg-slate-900/10 p-6 shadow-xl">
+            <ResellerApplicationForm parentStoreId={store.id} primaryColor={primaryColor} />
+          </div>
 
           <div className="text-center mt-8">
             <a

@@ -16,48 +16,51 @@ export default async function SubAgentsPage() {
     redirect("/dashboard/my-stores");
   }
 
-  // Get full descendant tree using ancestorPath prefix/contains match
-  const descendants = await prisma.store.findMany({
+  // Get full descendant tree of users using ancestorPath prefix/contains match on userId
+  const descendants = await prisma.user.findMany({
     where: {
       ancestorPath: {
-        contains: activeStore.id,
+        contains: userId,
       },
     },
     orderBy: { createdAt: "desc" },
-    include: { owner: true },
+    include: { stores: true },
   });
 
-  // Calculate relative tier depth and statistics for each descendant
+  // Calculate relative tier depth and statistics for each descendant User
   const processedDescendants = await Promise.all(
-    descendants.map(async (store) => {
-      // Relative depth: how many levels below the active store
-      const pathParts = store.ancestorPath.split("/");
-      const activeIndex = pathParts.indexOf(activeStore.id);
-      // If activeStore is not found, index is -1. Otherwise relative depth is computed.
+    descendants.map(async (user) => {
+      // Relative depth: how many levels below the active user
+      const pathParts = user.ancestorPath.split("/");
+      const activeIndex = pathParts.indexOf(userId);
       const depth = activeIndex !== -1 ? pathParts.length - activeIndex : 1;
 
-      // Count orders of this store
+      // Count orders of this user's storefronts
       const orderCount = await prisma.order.count({
-        where: { storeId: store.id },
+        where: { sellingUserId: user.id },
       });
 
-      // Sum of ledger entries where this store was the selling store
-      const storeLedgers = await prisma.ledger.findMany({
-        where: { storeId: store.id },
+      // Sum of ledger entries where this user was the selling reseller user
+      const userLedgers = await prisma.ledger.findMany({
+        where: { userId: user.id },
       });
-      const storeProfit = storeLedgers.reduce((acc, row) => acc + row.amountPesewas, 0);
+      const userProfit = userLedgers.reduce((acc, row) => acc + row.amountPesewas, 0);
 
       return {
-        ...store,
+        id: user.id,
+        name: user.name || user.email.split("@")[0],
+        email: user.email,
+        status: user.status,
+        stores: user.stores,
         depth,
         orderCount,
-        storeProfit,
+        userProfit,
       };
     })
   );
 
   // Aggregated totals across downline
-  const totalDownlineProfit = processedDescendants.reduce((acc, row) => acc + row.storeProfit, 0);
+  const totalDownlineProfit = processedDescendants.reduce((acc, row) => acc + row.userProfit, 0);
   const totalDownlineOrders = processedDescendants.reduce((acc, row) => acc + row.orderCount, 0);
 
   const formatGHS = (pesewas: number) => {
@@ -77,7 +80,7 @@ export default async function SubAgentsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-5 shadow">
           <div className="text-xs font-semibold text-slate-500 uppercase">Downline Size</div>
-          <div className="text-2xl font-bold text-slate-100 mt-2">{descendants.length} stores</div>
+          <div className="text-2xl font-bold text-slate-100 mt-2">{descendants.length} resellers</div>
         </div>
 
         <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-5 shadow">
@@ -103,9 +106,9 @@ export default async function SubAgentsPage() {
             <table className="w-full text-left text-sm text-slate-400">
               <thead className="text-xs uppercase text-slate-500 border-b border-slate-900">
                 <tr>
-                  <th className="py-3">Store Name</th>
+                  <th className="py-3">Agent / Storefront Skins</th>
                   <th className="py-3">Relative Tier Depth</th>
-                  <th className="py-3">Owner Contact</th>
+                  <th className="py-3">Contact Email</th>
                   <th className="py-3">Total Orders</th>
                   <th className="py-3">Cumulative Profit</th>
                   <th className="py-3">Status</th>
@@ -114,23 +117,34 @@ export default async function SubAgentsPage() {
               <tbody className="divide-y divide-slate-900">
                 {processedDescendants.map((agent) => (
                   <tr key={agent.id} className="hover:bg-slate-900/20">
-                    <td className="py-4 font-semibold text-slate-200">{agent.name}</td>
+                    <td className="py-4">
+                      <div className="font-semibold text-slate-200">{agent.name}</div>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {agent.stores.map((s) => (
+                          <span key={s.id} className="font-mono text-[10px] text-slate-500">
+                            /shop/{s.slug} ({s.name})
+                          </span>
+                        ))}
+                      </div>
+                    </td>
                     <td className="py-4">
                       <span className="inline-block rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-400">
                         Tier {agent.depth} Downline
                       </span>
                     </td>
                     <td className="py-4">
-                      <div className="text-xs text-slate-350">{agent.owner.email}</div>
+                      <div className="text-xs text-slate-355">{agent.email}</div>
                     </td>
                     <td className="py-4">{agent.orderCount} sales</td>
-                    <td className="py-4 font-bold text-slate-300">{formatGHS(agent.storeProfit)}</td>
+                    <td className="py-4 font-bold text-slate-300">{formatGHS(agent.userProfit)}</td>
                     <td className="py-4">
                       <span
                         className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${
                           agent.status === "ACTIVE"
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : "bg-red-500/10 text-red-400 border border-red-500/20"
+                            : agent.status === "SUSPENDED"
+                            ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                            : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                         }`}
                       >
                         {agent.status}

@@ -30,30 +30,30 @@ async function getWholesaleCost(bundleId: string): Promise<number> {
 }
 
 export async function savePricingAction(formData: {
-  storeId: string;
+  storeId: string; // Kept for interface compatibility
   bundleId: string;
   priceForCustomersPesewas: number;
   priceForSubAgentsPesewas: number;
 }) {
   try {
-    const user = await getRequiredSession();
-    const { storeId, bundleId, priceForCustomersPesewas, priceForSubAgentsPesewas } = formData;
+    const sessionUser = await getRequiredSession();
+    const { bundleId, priceForCustomersPesewas, priceForSubAgentsPesewas } = formData;
 
-    // Verify store ownership
-    const store = await prisma.store.findUnique({
-      where: { id: storeId },
+    const user = await prisma.user.findUnique({
+      where: { id: sessionUser.id },
     });
-    if (!store || store.ownerUserId !== user.id) {
-      return { success: false, error: "Unauthorized access to this store." };
+
+    if (!user) {
+      return { success: false, error: "User not found." };
     }
 
-    // Floor price validation: must be >= what this store itself pays
+    // Floor price validation: must be >= what this user itself pays their parent
     let minAllowedPrice = 0;
-    if (store.parentStoreId) {
-      // Find parent store's sub-agent price
-      const parentPricing = await prisma.storePricing.findUnique({
+    if (user.parentUserId) {
+      // Find parent user's sub-agent price
+      const parentPricing = await prisma.userPricing.findUnique({
         where: {
-          storeId_bundleId: { storeId: store.parentStoreId, bundleId },
+          userId_bundleId: { userId: user.parentUserId, bundleId },
         },
       });
       if (parentPricing) {
@@ -89,17 +89,17 @@ export async function savePricingAction(formData: {
       };
     }
 
-    // Save
-    await prisma.storePricing.upsert({
+    // Save pricing dynamically associated with the User
+    await prisma.userPricing.upsert({
       where: {
-        storeId_bundleId: { storeId, bundleId },
+        userId_bundleId: { userId: user.id, bundleId },
       },
       update: {
         priceForCustomersPesewas,
         priceForSubAgentsPesewas,
       },
       create: {
-        storeId,
+        userId: user.id,
         bundleId,
         priceForCustomersPesewas,
         priceForSubAgentsPesewas,

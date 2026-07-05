@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { StoreStatus } from "@prisma/client";
+import { UserStatus } from "@prisma/client";
 
 async function getRequiredSession() {
   const session = await getServerSession(authOptions);
@@ -12,34 +12,31 @@ async function getRequiredSession() {
 }
 
 export async function toggleAgentStatusAction(formData: {
-  storeId: string;
-  agentStoreId: string;
+  storeId: string; // Kept for interface compatibility
+  agentUserId: string;
   action: "SUSPEND" | "REACTIVATE";
 }) {
   try {
     const user = await getRequiredSession();
-    const { storeId, agentStoreId, action } = formData;
+    const { agentUserId, action } = formData;
 
-    // Verify parent store ownership
-    const parentStore = await prisma.store.findUnique({
-      where: { id: storeId },
+    // Verify target agent is a direct child of the logged-in user
+    const agentUser = await prisma.user.findFirst({
+      where: {
+        id: agentUserId,
+        parentUserId: user.id,
+      },
     });
-    if (!parentStore || parentStore.ownerUserId !== user.id) {
-      return { success: false, error: "Unauthorized access to parent store." };
+
+    if (!agentUser) {
+      return { success: false, error: "Target agent is not your direct downline." };
     }
 
-    // Verify target agent is a direct child
-    const agentStore = await prisma.store.findUnique({
-      where: { id: agentStoreId },
-    });
-    if (!agentStore || agentStore.parentStoreId !== storeId) {
-      return { success: false, error: "Target store is not your direct agent downline." };
-    }
-
-    await prisma.store.update({
-      where: { id: agentStoreId },
+    // Toggle status on User
+    await prisma.user.update({
+      where: { id: agentUserId },
       data: {
-        status: action === "SUSPEND" ? StoreStatus.SUSPENDED : StoreStatus.ACTIVE,
+        status: action === "SUSPEND" ? UserStatus.SUSPENDED : UserStatus.ACTIVE,
       },
     });
 

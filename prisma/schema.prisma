@@ -12,16 +12,22 @@ enum Role {
   ADMIN
 }
 
+enum AccountType {
+  ROOT
+  AGENT
+  INDEPENDENT
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
 enum StoreStatus {
   ACTIVE
   SUSPENDED
   PENDING
-}
-
-enum StoreType {
-  ROOT
-  AGENT
-  INDEPENDENT
 }
 
 enum ApplicationStatus {
@@ -76,64 +82,69 @@ model User {
   phone        String?
   passwordHash String
   role         Role     @default(USER)
+  accountType  AccountType?
+  parentUserId String?
+  ancestorPath String   @default("root")
+  applicationFeePesewas Int @default(0)
+  status       UserStatus @default(PENDING)
   createdAt    DateTime @default(now())
 
   // Relations
+  parent             User?             @relation("UserHierarchy", fields: [parentUserId], references: [id])
+  childUsers         User[]            @relation("UserHierarchy")
   stores             Store[]
-  agentApplications  AgentApplication[] @relation("Applicant")
+  pricings           UserPricing[]
+  applicationsSent   AgentApplication[] @relation("Applicant")
+  applicationsReceived AgentApplication[] @relation("ParentUser")
   reviewedApps       AgentApplication[] @relation("Reviewer")
-  orders             Order[]
+  ledgers            Ledger[]
+  withdrawals        Withdrawal[]
+  ordersSelling      Order[]           @relation("SellingUser")
+  ordersBought       Order[]           @relation("CustomerUser")
   walletTransactions WalletTransaction[]
 }
 
 model Store {
   id             String      @id @default(uuid())
   ownerUserId    String
-  parentStoreId  String?
   slug           String      @unique
   name           String
   status         StoreStatus @default(PENDING)
-  storeType      StoreType   @default(INDEPENDENT)
   displayName    String?
   logoUrl        String?
   primaryColor   String      @default("#4F46E5") // default indigo
   supportEmail   String?
   contactPhone   String?
   footerText     String?
-  ancestorPath   String      @default("root")
   createdAt      DateTime    @default(now())
 
   // Relations
-  owner             User               @relation(fields: [ownerUserId], references: [id])
-  parent            Store?             @relation("StoreHierarchy", fields: [parentStoreId], references: [id])
-  childStores       Store[]            @relation("StoreHierarchy")
-  pricings          StorePricing[]
-  applications      AgentApplication[] @relation("StoreApplications")
-  ledgers           Ledger[]
-  withdrawals       Withdrawal[]
+  owner             User               @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  applicationsSubmitted AgentApplication[] @relation("ViaStore")
   orders            Order[]
 }
 
-model StorePricing {
+model UserPricing {
   id                        String   @id @default(uuid())
-  storeId                   String
+  userId                    String
   bundleId                  String
   priceForCustomersPesewas  Int
   priceForSubAgentsPesewas  Int
   updatedAt                 DateTime @updatedAt
 
   // Relations
-  store  Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
 
-  @@unique([storeId, bundleId])
+  @@unique([userId, bundleId])
 }
 
 model AgentApplication {
   id                     String            @id @default(uuid())
   applicantUserId        String
-  parentStoreId          String?
-  storeName              String
+  parentUserId           String?
+  viaStoreId             String?
+  storeName              String // Bootstrap applicant's storefront name
   applicationFeePesewas  Int
   paymentRef             String?           @unique
   status                 ApplicationStatus @default(PENDING_PAYMENT)
@@ -142,18 +153,19 @@ model AgentApplication {
   createdAt              DateTime          @default(now())
 
   // Relations
-  applicant   User    @relation("Applicant", fields: [applicantUserId], references: [id])
-  parentStore Store?  @relation("StoreApplications", fields: [parentStoreId], references: [id])
+  applicant   User    @relation("Applicant", fields: [applicantUserId], references: [id], onDelete: Cascade)
+  parentUser  User?   @relation("ParentUser", fields: [parentUserId], references: [id])
+  viaStore    Store?  @relation("ViaStore", fields: [viaStoreId], references: [id])
   reviewer    User?   @relation("Reviewer", fields: [reviewedByUserId], references: [id])
   ledgers     Ledger[]
 }
 
 model Ledger {
   id               String       @id @default(uuid())
-  storeId          String
+  userId           String
   orderId          String?
   applicationId    String?
-  tierDepth        Int          @default(0) // 0 = the selling store, 1 = parent, etc.
+  tierDepth        Int          @default(0) // 0 = direct selling agent, 1 = parent, etc.
   buyPricePesewas  Int
   sellPricePesewas Int
   amountPesewas    Int          // Profit: sellPrice - buyPrice
@@ -161,14 +173,14 @@ model Ledger {
   createdAt        DateTime     @default(now())
 
   // Relations
-  store       Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
   application AgentApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 }
 
 model Withdrawal {
   id                 String           @id @default(uuid())
-  storeId            String
+  userId             String
   amountPesewas      Int
   ledgerIds          String[]         // Flipped to WITHDRAWN on complete
   status             WithdrawalStatus @default(PENDING)
@@ -179,13 +191,14 @@ model Withdrawal {
   completedByUserId  String?
 
   // Relations
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Order {
   id                 String      @id @default(uuid())
-  userId             String?
+  customerUserId     String?
   storeId            String
+  sellingUserId      String
   bundleId           String
   recipientPhone     String
   status             OrderStatus @default(PENDING)
@@ -198,10 +211,11 @@ model Order {
   updatedAt          DateTime    @updatedAt
 
   // Relations
-  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  store   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  bundle  Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  ledgers Ledger[]
+  customer   User?    @relation("CustomerUser", fields: [customerUserId], references: [id], onDelete: SetNull)
+  sellingUser User    @relation("SellingUser", fields: [sellingUserId], references: [id], onDelete: Cascade)
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  bundle     Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  ledgers    Ledger[]
 }
 
 model Bundle {
@@ -210,7 +224,7 @@ model Bundle {
   label          String
   dataAmountGB   Float
   active         Boolean      @default(true)
-  storePricings  StorePricing[]
+  userPricings   UserPricing[]
   orders         Order[]
 }
 

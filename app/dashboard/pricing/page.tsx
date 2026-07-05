@@ -21,15 +21,19 @@ export default async function PricingPage() {
     where: { active: true },
   });
 
-  // Get active store pricings
-  const storePricings = await prisma.storePricing.findMany({
-    where: { storeId: activeStore.id },
+  // Get active user pricings
+  const userPricings = await prisma.userPricing.findMany({
+    where: { userId: userId },
   });
 
-  // Get parent pricings or wholesale defaults to compute wholesale floor (what this store pays)
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  // Get parent pricings or wholesale defaults to compute wholesale floor (what this user pays)
   const mappedBundles = await Promise.all(
     bundles.map(async (b) => {
-      // Find what this store pays
+      // Find what this user pays
       let costPrice = 0;
       const defaults: Record<string, number> = {
         "mtn-1gb": 300,
@@ -41,11 +45,11 @@ export default async function PricingPage() {
       };
       const wholesale = defaults[b.id] || 1000;
 
-      if (activeStore.parentStoreId) {
+      if (dbUser?.parentUserId) {
         // Parent sub-agent pricing
-        const parentPricing = await prisma.storePricing.findUnique({
+        const parentPricing = await prisma.userPricing.findUnique({
           where: {
-            storeId_bundleId: { storeId: activeStore.parentStoreId, bundleId: b.id },
+            userId_bundleId: { userId: dbUser.parentUserId, bundleId: b.id },
           },
         });
         costPrice = parentPricing ? parentPricing.priceForSubAgentsPesewas : Math.round(wholesale * 1.1);
@@ -53,10 +57,10 @@ export default async function PricingPage() {
         costPrice = wholesale; // Root / Independent pays raw wholesale
       }
 
-      // Existing store pricing configs
-      const sp = storePricings.find((p) => p.bundleId === b.id);
-      const customer = sp ? sp.priceForCustomersPesewas : Math.round(costPrice * 1.2);
-      const subAgent = sp ? sp.priceForSubAgentsPesewas : Math.round(costPrice * 1.1);
+      // Existing user pricing configs
+      const up = userPricings.find((p) => p.bundleId === b.id);
+      const customer = up ? up.priceForCustomersPesewas : Math.round(costPrice * 1.2);
+      const subAgent = up ? up.priceForSubAgentsPesewas : Math.round(costPrice * 1.1);
 
       return {
         id: b.id,

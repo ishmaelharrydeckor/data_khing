@@ -57,11 +57,9 @@ export default async function MyStoresPage() {
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 font-mono">/shop/{store.slug}</p>
-                      <div className="mt-3 flex gap-2 text-xs text-slate-450">
                         <span className="bg-slate-900 border border-slate-800 rounded px-2 py-1 uppercase">
-                          {store.storeType}
+                          Storefront
                         </span>
-                      </div>
                     </div>
                   </div>
                 );
