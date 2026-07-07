@@ -57,20 +57,20 @@ export default async function StorefrontPage({ params }: { params: Promise<{ sto
       {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {store.logoUrl ? (
               <img src={store.logoUrl} alt={store.name} className="h-10 w-auto object-contain rounded" />
             ) : (
-              <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent truncate max-w-[150px] sm:max-w-[250px] md:max-w-none">
                 {store.displayName || store.name}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 shrink-0">
             <Link
               href={`/shop/${store.slug}/become-a-reseller`}
-              className="rounded-full px-5 py-2 text-sm font-semibold text-white transition-all shadow-md"
+              className="rounded-full px-3 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold text-white transition-all shadow-md"
               style={{ backgroundColor: primaryColor }}
             >
               Become a Reseller

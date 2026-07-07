@@ -38,11 +38,11 @@ export default async function BecomeAResellerPage({ params }: { params: Promise<
       {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {store.logoUrl ? (
               <img src={store.logoUrl} alt={store.name} className="h-10 w-auto object-contain rounded" />
             ) : (
-              <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent truncate max-w-[150px] sm:max-w-[250px] md:max-w-none">
                 {store.displayName || store.name}
               </span>
             )}
