@@ -30,6 +30,15 @@ export default async function PricingPage() {
     where: { id: userId },
   });
 
+  // Fetch live supplier products to show actual wholesale base prices
+  const { supplierClient } = await import("@/lib/supplier-client");
+  let supplierProducts: any[] = [];
+  try {
+    supplierProducts = await supplierClient.getProducts();
+  } catch (err) {
+    console.error("Failed to load live supplier products for pricing editor:", err);
+  }
+
   // Get parent pricings or wholesale defaults to compute wholesale floor (what this user pays)
   const mappedBundles = await Promise.all(
     bundles.map(async (b) => {
@@ -43,7 +52,9 @@ export default async function PricingPage() {
         "telecel-5gb": 1100,
         "at-3gb": 600,
       };
-      const wholesale = defaults[b.id] || 1000;
+      
+      const supplierProd = supplierProducts.find(sp => sp.id === b.id);
+      const wholesale = supplierProd ? supplierProd.wholesalePricePesewas : (defaults[b.id] || 1000);
 
       if (dbUser?.parentUserId) {
         // Parent sub-agent pricing

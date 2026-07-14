@@ -173,10 +173,10 @@ class RealSupplierClient implements ISupplierClient {
   }
 
   async getProducts(): Promise<SupplierProduct[]> {
-    const data = await this.makeRequest("/products", "GET");
-    // Assume data is an array of products matching DataMart structure
-    // Let's map it safely. If format differs, normalize here.
-    return data.map((item: any) => {
+    const response = await this.makeRequest("/products", "GET");
+    const productsList = Array.isArray(response) ? response : (response.data || []);
+    
+    return productsList.map((item: any) => {
       // Map networks
       let net: "YELLO" | "TELECEL" | "AT_PREMIUM" = "YELLO";
       if (item.network === "TELECEL") net = "TELECEL";
@@ -185,9 +185,9 @@ class RealSupplierClient implements ISupplierClient {
       return {
         id: item.id || item.productId,
         network: net,
-        label: item.name || item.label || `${net} ${item.capacity}GB`,
+        label: item.displayName || item.name || item.label || `${net} ${item.capacity}GB`,
         dataAmountGB: parseFloat(item.capacity || "0"),
-        wholesalePricePesewas: Math.round(parseFloat(item.price || "0") * 100),
+        wholesalePricePesewas: Math.round(parseFloat(item.basePrice || item.price || "0") * 100),
       };
     });
   }

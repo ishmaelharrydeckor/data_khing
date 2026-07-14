@@ -9,6 +9,17 @@ async function getWholesaleCost(bundleId: string): Promise<number> {
     where: { id: bundleId },
   });
   if (!bundle) return 0;
+
+  try {
+    const { supplierClient } = await import("./supplier-client");
+    const products = await supplierClient.getProducts();
+    const match = products.find(p => p.id === bundleId);
+    if (match) {
+      return match.wholesalePricePesewas;
+    }
+  } catch (err) {
+    console.error("Failed to fetch dynamic wholesale cost from supplier:", err);
+  }
   
   const defaults: Record<string, number> = {
     "mtn-1gb": 300,
