@@ -127,6 +127,7 @@ class RealSupplierClient implements ISupplierClient {
       method,
       headers: this.getHeaders(idempotencyKey),
       body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
     });
 
     if (!res.ok) {
